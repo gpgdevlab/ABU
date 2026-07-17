@@ -2,7 +2,7 @@ extends "res://world_element.gd"
 class_name Interactable
 
 @export var item_name: String = "Troca"
-# Esta é a função que o jogador vai chamar ao apertar o botão de interagir
+#Função que o jogador vai chamar ao apertar o botão de interagir
 func interact() -> void:
 	Inventario.adicionar_item(item_name)
 	

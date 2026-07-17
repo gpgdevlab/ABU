@@ -4,7 +4,6 @@ extends CharacterBody2D
 @export var speed: float = 200.0
 @onready var texto_inventario: Label = $CanvasLayer/TextoInventario
 # --- CARREGAR OS FRAME DE CADA MUNDO ---
-# Arraste os arquivos .tres que você salvou para dentro das aspas abaixo se o caminho for diferente!
 var frames_mundo_1 = preload("res://nootnoot/frames_mundo1.tres")
 var frames_mundo_2 = preload("res://nootnoot/frames_mundo2.tres")
 
@@ -43,7 +42,7 @@ func _physics_process(_delta: float) -> void:
 		velocity = velocity.move_toward(Vector2.ZERO, speed)
 		
 		# 3. PARADO (IDLE)
-		# Quando o jogador para, podemos manter o frame parado olhando para a última direção,
+		# Quando o jogador para, manter o frame parado olhando para a última direção,
 		# ou simplesmente parar a animação atual no primeiro quadro (frame 0)
 		animated_sprite.stop()
 		animated_sprite.frame = 0 # Mantém o sprite de pé, sem caminhar
@@ -84,8 +83,7 @@ func try_to_interact() -> void:
 		print("Nada para interagir por perto.")
 
 
-# Função que faz a transição entre os dois mundos
-# --- FUNÇÃO DE TRANSIÇÃO DE MUNDO ATUALIZADA ---
+# --- FUNÇÃO DE TRANSIÇÃO DE MUNDO ---
 func toggle_world() -> void:
 	if current_world == 1:
 		current_world = 2
@@ -100,10 +98,7 @@ func toggle_world() -> void:
 		
 		# Retorna para as animações originais do Mundo 1
 		animated_sprite.sprite_frames = frames_mundo_1
-
-	# (Opcional) Removemos a mudança de cor anterior para que as novas sprites apareçam com a cor original delas
 	change_world_visuals(Color(1.0, 1.0, 1.0)) 
-
 	# Avisa os objetos interativos para sumirem/aparecerem
 	get_tree().call_group("world_elements", "on_world_switched", current_world)
 
