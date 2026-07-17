@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://6umehdn8y14h"]
+
+[ext_resource type="PackedScene" uid="uid://delx3hgnvakxf" path="res://nootnoot/CenarioMundo1.tscn" id="1_aou4a"]
+[ext_resource type="PackedScene" uid="uid://lfmflr71hpip" path="res://interactable.tscn" id="1_lgngo"]
+[ext_resource type="PackedScene" uid="uid://bicgwngtvf2rc" path="res://nootnoot/CenarioMundo2.tscn" id="2_5ckkb"]
+[ext_resource type="PackedScene" uid="uid://b7vcm617wem5x" path="res://persona.tscn" id="2_fw4w5"]
+
+[node name="Node2D" type="Node2D" unique_id=1582925876]
+y_sort_enabled = true
+
+[node name="cenario_mundo1" parent="." unique_id=1429399957 instance=ExtResource("1_aou4a")]
+
+[node name="cenario_mundo2" parent="." unique_id=1381291962 instance=ExtResource("2_5ckkb")]
+active_in_world = 2
+
+[node name="persona" parent="." unique_id=2091393524 instance=ExtResource("2_fw4w5")]
+z_index = 1
+y_sort_enabled = true
+
+[node name="interactable2" parent="." unique_id=94622446 instance=ExtResource("1_lgngo")]
+y_sort_enabled = true
+position = Vector2(53, -36)
+
+[node name="interactable" parent="." unique_id=1226173116 instance=ExtResource("1_lgngo")]
+z_index = 1
+y_sort_enabled = true
+position = Vector2(-60, -43)
+active_in_world = 2

@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://lfmflr71hpip"]
+
+[ext_resource type="Script" uid="uid://eg15y6w0au1y" path="res://interactable.gd" id="1_wh154"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_x3v40"]
+
+[sub_resource type="CanvasTexture" id="CanvasTexture_wh154"]
+
+[node name="interactable" type="Area2D" unique_id=94622446]
+monitoring = false
+script = ExtResource("1_wh154")
+active_in_world = null
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1931672908]
+shape = SubResource("CircleShape2D_x3v40")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=362720874 groups=["interactable"]]
+scale = Vector2(8, 8)
+texture = SubResource("CanvasTexture_wh154")
