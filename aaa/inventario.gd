@@ -1,8 +1,16 @@
 extends Node
 
-# lista simples para guardar os nomes dos itens coletados
+# Lista simples para guardar os nomes dos itens coletados
 var itens: Array[String] = []
 var itens_coletados: Array = []
+
+# Guardar posisão de retorno
+var posicao_retorno: Vector2 = Vector2.ZERO
+var deve_posicionar_player: bool = false
+
+# Guardar mundo atual
+var mundo_salvo: int = 1
+
 # Função para adicionar um item
 func adicionar_item(nome_do_item: String) -> void:
 	itens.append(nome_do_item)

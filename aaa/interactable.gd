@@ -13,7 +13,7 @@ func _ready() -> void:
 	if not is_in_group("world_elements"):
 		add_to_group("world_elements")
 		
-	# Garante que ele use o mundo atual do player ao nascer
+	# Garante que usa o mundo atual do player ao nascer
 	var player = get_tree().get_first_node_in_group("player")
 	if player and "current_world" in player:
 		on_world_switched(player.current_world)

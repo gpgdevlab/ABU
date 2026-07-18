@@ -53,8 +53,33 @@ func _physics_process(_delta: float) -> void:
 	move_and_slide()
 
 func _ready() -> void:
-	atualizar_ui_inventario()
+	# 1. Se viemos de uma porta que salvou a posição, aplica apenas no mundo de fora
+	if Inventario.deve_posicionar_player and "mundo" in get_tree().current_scene.scene_file_path:
+		global_position = Inventario.posicao_retorno
+		Inventario.deve_posicionar_player = false
+	
+	# [CORREÇÃO] Restaura o mundo salvo para o personagem manter a skin correta dentro de QUALQUER sala
+	current_world = Inventario.mundo_salvo
+	print("Player carregado na sala atual usando o Mundo: ", current_world)
+		
+	# 2. Atualiza os visuais e frames do cowboy para o mundo restaurado
+	if current_world == 1:
+		animated_sprite.sprite_frames = frames_mundo_1
+	else:
+		animated_sprite.sprite_frames = frames_mundo_2
+		
+	# [NOVO] 3. Força o personagem a nascer olhando para frente (para baixo)
+	# Se ele estiver voltando para o mundo de fora, ajustamos a pose inicial
+	if "mundo" in get_tree().current_scene.scene_file_path:
+		animated_sprite.play("move_down") # Seleciona a animação de andar/olhar para baixo
+		animated_sprite.stop()            # Pausa a animação imediatamente
+		animated_sprite.frame = 0         # Trava no primeiro frame (ele em pé parado)
+		print("Pose inicial definida: Olhando para baixo")
 
+	# 4. Força todos os elementos dessa sala a respeitarem o mundo
+	get_tree().call_group("world_elements", "on_world_switched", current_world)
+		
+	atualizar_ui_inventario()
 
 func _unhandled_input(event: InputEvent) -> void:
 	# 1. Detecta o comando de interagir

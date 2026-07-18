@@ -1,4 +1,4 @@
-extends Area2D # Mudamos aqui para estender direto de Area2D
+extends Area2D # Estender direto de Area2D
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -6,7 +6,7 @@ extends Area2D # Mudamos aqui para estender direto de Area2D
 @export var precisa_de_chave: bool = false
 @export var nome_da_chave: String = "Chave do Bau"
 
-# [NOVO] Adicionamos a variável que o sistema do seu mapa usa para saber em qual mundo o baú aparece
+# [NOVO] A variável que o sistema do mapa usa para saber em qual mundo o baú aparece
 @export var active_in_world: int = 1 
 
 var ja_aberto: bool = false
@@ -14,11 +14,20 @@ var ja_aberto: bool = false
 func _ready() -> void:
 	process_mode = PROCESS_MODE_ALWAYS
 	
+	# 1. Se o inventário global disser que este baú já foi aberto antes:
 	if Inventario.ja_foi_coletado(name):
 		ja_aberto = true
-		animated_sprite.play("aberto")
+		
+		# [Ajuste Visual] Coloca a animação no modo "aberto"
+		animated_sprite.animation = "aberto"
+		
+		# Força o sprite a ir direto para o último frame 
+		# e para a reprodução imediatamente para não rodar a animação de novo
+		var ultimo_frame = animated_sprite.sprite_frames.get_frame_count("aberto") - 1
+		animated_sprite.set_frame_and_progress(ultimo_frame, 0.0)
+		animated_sprite.stop()
 	
-	# Sincroniza o estado inicial do baú
+	# 2. Sincroniza o estado inicial das colisões e visibilidade (continua igual)
 	if active_in_world == 1:
 		show()
 		monitoring = true

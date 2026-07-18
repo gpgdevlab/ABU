@@ -115,6 +115,7 @@ tile_set = SubResource("TileSet_mrg51")
 [node name="Porta" parent="TileMapLayer" unique_id=1296926976 instance=ExtResource("5_vo8v6")]
 position = Vector2(544, 502)
 cena_destino = "uid://6umehdn8y14h"
+active_in_world = 2
 
 [node name="persona" parent="TileMapLayer" unique_id=2091393524 instance=ExtResource("5_mp6lo")]
 position = Vector2(543, 477)
