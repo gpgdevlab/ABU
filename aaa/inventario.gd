@@ -11,9 +11,17 @@ var deve_posicionar_player: bool = false
 # Guardar mundo atual
 var mundo_salvo: int = 1
 
+# Desbloquear troca
+var troca_desbloqueada: bool = false
+
 # Função para adicionar um item
 func adicionar_item(nome_do_item: String) -> void:
 	itens.append(nome_do_item)
+
+	# [NOVO] Se o item coletado for a "Troca", desbloqueia o botão Q para sempre
+	if nome_do_item == "Troca":
+		troca_desbloqueada = true
+		print("Habilidade de troca de mundos DESBLOQUEADA permanentemente!")
 	print("Item adicionado ao inventário: ", nome_do_item)
 	print("Inventário atual: ", itens)
 

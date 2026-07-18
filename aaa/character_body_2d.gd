@@ -3,6 +3,14 @@ extends CharacterBody2D
 # --- VARIÁVEIS DE MOVIMENTO ---
 @export var speed: float = 200.0
 @onready var texto_inventario: Label = $CanvasLayer/TextoInventario
+@export var dash_speed: float = 600.0   # Velocidade durante o dash (o triplo da normal)
+@export var dash_duration: float = 0.15 # Quanto tempo dura o "sumiço" (em segundos)
+@export var dash_cooldown: float = 0.6 # Tempo de espera para poder usar de novo
+	
+var is_dashing: bool = false
+var can_dash: bool = true
+var dash_direction: Vector2 = Vector2.DOWN
+
 # --- CARREGAR OS FRAME DE CADA MUNDO ---
 var frames_mundo_1 = preload("res://nootnoot/frames_mundo1.tres")
 var frames_mundo_2 = preload("res://nootnoot/frames_mundo2.tres")
@@ -13,6 +21,15 @@ var frames_mundo_2 = preload("res://nootnoot/frames_mundo2.tres")
 # --- REFERÊNCIA DA TELAPRETA ---
 @onready var tela_preta: ColorRect = $CanvasLayer/TelaPreta
 
+# --- REFERÊNCIA DE CÂMERA ---
+@onready var camera: Camera2D = $Camera2D
+
+# --- REFERÊNCIA DOS ÁUDIOS ---
+@onready var musica_mundo_1: AudioStreamPlayer2D = $MusicaMundo1
+@onready var musica_mundo_2: AudioStreamPlayer2D = $MusicaMundo2
+@onready var som_troca_mundo: AudioStreamPlayer2D = $SomTrocaMundo
+@onready var som_bloqueio: AudioStreamPlayer2D = $SomBloqueio
+
 # --- SISTEMA DE MUNDOS ---
 var current_world: int = 1
 
@@ -20,11 +37,18 @@ var current_world: int = 1
 var interactable_object = null
 
 func _physics_process(_delta: float) -> void:
+	# 0. Se estiver dando o dash, move na direção travada e ignora os comandos normais
+	if is_dashing:
+		velocity = dash_direction * dash_speed
+		move_and_slide()
+		return # Para o resto da física normal para não misturar as velocidades
+	
 	# 1. Movimentação Topdown básica
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	
 	if direction != Vector2.ZERO:
 		velocity = direction * speed
+		dash_direction = direction.normalized() # [NOVO] Guarda a última direção para o dash saber para onde ir
 		
 		# 2. SISTEMA DE ANIMAÇÃO BASEADO NA DIREÇÃO
 		# Prioriza a direção com maior força no movimento
@@ -80,6 +104,7 @@ func _ready() -> void:
 	get_tree().call_group("world_elements", "on_world_switched", current_world)
 		
 	atualizar_ui_inventario()
+	atualizar_musica_do_mundo()
 
 func _unhandled_input(event: InputEvent) -> void:
 	# 1. Detecta o comando de interagir
@@ -97,6 +122,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			atualizar_ui_inventario() # Atualiza os itens antes de mostrar
 			texto_inventario.show()   # Se estava escondido, mostraasd
+# [NOVO] 4. Detecta o comando de Dash 
+	if event.is_action_pressed("ui_accept") or event.is_action_pressed("dash"): 
+		executar_dash()
+
 
 # --- FUNÇÕES AUXILIARES ---
 
@@ -127,46 +156,58 @@ func try_to_interact() -> void:
 
 # --- FUNÇÃO DE TRANSIÇÃO DE MUNDO ---
 func toggle_world() -> void:
-	# [NOVO] 1. Checa se o jogador tem o item necessário para viajar
+	# [NOVO] 1. Bloqueia o botão Q se ele nunca tiver coletado o item de troca
+	if not Inventario.troca_desbloqueada:
+		print("Botão Q bloqueado: Você ainda não encontrou o item de Troca!")
+		return # Cancela o código aqui mesmo, sem gastar nada e sem piscar a tela
+	# [NOVO] 2. Checa se o jogador tem o item necessário para viajar
 	if not Inventario.tem_item("Troca"):
 		print("Você não tem nenhuma carga de 'Troca' para mudar de dimensão!")
+		$SomBloqueio.play()
+		# [NOVO] Chacoalha a câmera! Intensidade de 8 pixels por 0.25 segundos
+		tremer_camera(8.0, 0.25)
 		piscar_tela_bloqueio() # Dá o mesmo feedback visual se ele não tiver o item
 		return # Cancela a viagem aqui mesmo
 		
-	# 2. Define qual seria o próximo mundo
+	# 3. Define qual seria o próximo mundo
 	var next_world = 2 if current_world == 1 else 1
 	
-	# 3. Ativa temporariamente o próximo mundo para a física testar
+	# 4. Ativa temporariamente o próximo mundo para a física testar
 	get_tree().call_group("world_elements", "on_world_switched", next_world)
 	
-	# 4. Espera a física processar o estado das paredes
+	# 5. Espera a física processar o estado das paredes
 	await get_tree().physics_frame
 	
-	# 5. Testa se o jogador ficaria preso no lugar
+	# 6. Testa se o jogador ficaria preso no lugar
 	if test_move(global_transform, Vector2.ZERO):
 		print("Bloqueado! Há um obstáculo na outra dimensão.")
 		# Se deu ruim, força todo mundo a voltar para o mundo atual
 		get_tree().call_group("world_elements", "on_world_switched", current_world)
+		$SomBloqueio.play() # Toca o som de bloqueio
+		# [NOVO] Chacoalha a câmera! Intensidade de 8 pixels por 0.25 segundos
+		tremer_camera(8.0, 0.25)
 		piscar_tela_bloqueio()
 		return # Cancela a troca e NÃO consome o item!
 		
-	# 6. SE CHEGOU AQUI, O CAMINHO ESTÁ LIVRE E VOCÊ TEM O ITEM! Confirma a troca definitiva
+	# 7. SE CHEGOU AQUI, O CAMINHO ESTÁ LIVRE E VOCÊ TEM O ITEM! Confirma a troca definitiva
 	current_world = next_world
 	if current_world == 1:
 		animated_sprite.sprite_frames = frames_mundo_1
 	else:
 		animated_sprite.sprite_frames = frames_mundo_2
 		
-	# [NOVO] 7. Consome o item do inventário apenas agora que a troca deu 100% certo!
+	# [NOVO] 8. Consome o item do inventário apenas agora que a troca deu 100% certo!
 	Inventario.remover_item("Troca")
 	atualizar_ui_inventario() # Atualiza o texto da tela para sumir com o item gasto
-	
-	# 8. Força o mapa a se atualizar definitivamente para o novo mundo
+	som_troca_mundo.play() # Toca o audio de troca
+	# [NOVO] Chacoalha a câmera! Intensidade de 8 pixels por 0.25 segundos
+	tremer_camera(8.0, 0.25)
+	# 9. Força o mapa a se atualizar definitivamente para o novo mundo
 	get_tree().call_group("world_elements", "on_world_switched", current_world)
 	
-	# 9. Atualiza o visual do cowboy
+	# 10qqqqqqqqqqqqqqqq. Atualiza o visual do cowboy
 	change_world_visuals(Color(1.0, 1.0, 1.0))
-
+	atualizar_musica_do_mundo()
 # Apenas um efeito visual simples de demonstração no jogador
 func change_world_visuals(new_color: Color) -> void:
 	modulate = new_color
@@ -208,3 +249,58 @@ func piscar_tela_bloqueio() -> void:
 	
 	# 3. Quando a animação terminar por completo, esconde o nó para poupar processamento
 	tween.tween_callback(func(): tela_preta.hide())
+
+func atualizar_musica_do_mundo() -> void:
+	if current_world == 1:
+		# Se a música 1 não estiver tocando, dá o play
+		if not musica_mundo_1.playing:
+			musica_mundo_1.play()
+		# Para a música do mundo 2
+		musica_mundo_2.stop()
+	else:
+		# Se a música 2 não estiver tocando, dá o play
+		if not musica_mundo_2.playing:
+			musica_mundo_2.play()
+		# Para a música do mundo 1
+		musica_mundo_1.stop()
+	
+func tremer_camera(intensidade: float, duracao: float) -> void:
+	var tween = create_tween()
+	
+	# Faz a câmera dar pequenos solavancos rápidos mudando o offset
+	# Vamos fazer 4 movimentos rápidos aleatórios para simular o tremor
+	for i in range(4):
+		var direcao_aleatoria = Vector2(
+			randf_range(-intensidade, intensidade),
+			randf_range(-intensidade, intensidade)
+		)
+		# Move para a posição tremida
+		tween.tween_property(camera, "offset", direcao_aleatoria, duracao / 5.0)
+		
+	# No final, força a câmera a voltar exatamente para o centro suavemente
+	tween.tween_property(camera, "offset", Vector2.ZERO, duracao / 5.0)
+	
+func executar_dash() -> void:
+	if not can_dash or is_dashing:
+		return
+		
+	is_dashing = true
+	can_dash = false
+	
+	# Efeito visual de "sumir": deixa o sprite invisível ou quase invisível (opacidade baixa)
+	animated_sprite.modulate.a = 0.1 # 0.1 se quiser rastro fantasma
+	
+	# Treme a tela de leve no dash
+	tremer_camera(3.0, 0.1)
+	
+	# Espera o tempo de duração do dash terminar
+	await get_tree().create_timer(dash_duration).timeout
+	
+	# Termina o movimento do dash e faz o personagem reaparecer
+	is_dashing = false
+	animated_sprite.modulate.a = 1.0 # Volta a opacidade normal
+	
+	# Espera o tempo de recarga para liberar o botão novamente
+	await get_tree().create_timer(dash_cooldown).timeout
+	can_dash = true
+	print("Dash pronto para usar novamente!")

@@ -21,7 +21,7 @@ func interact() -> void:
 	# [NOVO] Se a cena de destino for o mundo principal, salvamos a nossa posição atual 
 	# para o player saber onde nascer quando o mundo recarregar.
 	if "mundo" in get_tree().current_scene.scene_file_path:
-		Inventario.posicao_retorno = global_position + Vector2(0, 45)
+		Inventario.posicao_retorno = global_position + Vector2(0, 32)
 		Inventario.deve_posicionar_player = true
 		
 		# [NOVO] Busca o jogador no grupo e salva o mundo em que ele estava
@@ -32,7 +32,7 @@ func interact() -> void:
 		
 		# 2. Guarda a posição de calçada apenas se estivermos no mapa principal
 	if "mundo" in get_tree().current_scene.scene_file_path:
-		Inventario.posicao_retorno = global_position + Vector2(0, 45)
+		Inventario.posicao_retorno = global_position + Vector2(0, 32)
 		Inventario.deve_posicionar_player = true
 	
 	print("Trocando de cenário...")

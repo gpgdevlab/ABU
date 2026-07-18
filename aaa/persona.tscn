@@ -1,7 +1,11 @@
 [gd_scene format=3 uid="uid://b7vcm617wem5x"]
 
 [ext_resource type="Script" uid="uid://bjxjredmffy2a" path="res://character_body_2d.gd" id="1_m0u47"]
+[ext_resource type="AudioStream" uid="uid://dmq48kmpyxby4" path="res://freesound_community-sleep-talking-ogg-68026.mp3" id="3_urmmq"]
+[ext_resource type="AudioStream" uid="uid://pxighwg1js1o" path="res://freesound_community-orchestral_2of5-75312.mp3" id="4_urmmq"]
+[ext_resource type="AudioStream" uid="uid://cve5s87es0bey" path="res://soundreality-ui-interface-sound-26-299883.mp3" id="5_0mpfp"]
 [ext_resource type="Texture2D" uid="uid://dadgy40c68s40" path="res://Sprout Lands - Sprites - Basic pack/Characters/Basic Charakter Spritesheet.png" id="6_5ljve"]
+[ext_resource type="AudioStream" uid="uid://b51enq6d34yux" path="res://miraclei-sample_error_fail02_kofi_by_miraclei-360131.mp3" id="6_785st"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_kmr87"]
 atlas = ExtResource("6_5ljve")
@@ -183,6 +187,19 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
+
+[node name="MusicaMundo1" type="AudioStreamPlayer2D" parent="player" unique_id=1293199165]
+stream = ExtResource("3_urmmq")
+autoplay = true
+
+[node name="MusicaMundo2" type="AudioStreamPlayer2D" parent="player" unique_id=1571817566]
+stream = ExtResource("4_urmmq")
+
+[node name="SomTrocaMundo" type="AudioStreamPlayer2D" parent="player" unique_id=1186129014]
+stream = ExtResource("5_0mpfp")
+
+[node name="SomBloqueio" type="AudioStreamPlayer2D" parent="player" unique_id=1988603576]
+stream = ExtResource("6_785st")
 
 [connection signal="area_entered" from="player/InteractionZone" to="player" method="_on_interaction_zone_area_entered"]
 [connection signal="area_exited" from="player/InteractionZone" to="player" method="_on_interaction_zone_area_exited"]
