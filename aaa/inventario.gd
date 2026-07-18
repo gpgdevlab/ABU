@@ -2,7 +2,7 @@ extends Node
 
 # lista simples para guardar os nomes dos itens coletados
 var itens: Array[String] = []
-
+var itens_coletados: Array = []
 # Função para adicionar um item
 func adicionar_item(nome_do_item: String) -> void:
 	itens.append(nome_do_item)
@@ -19,3 +19,10 @@ func remover_item(nome_do_item: String) -> void:
 	if tem_item(nome_do_item):
 		itens.erase(nome_do_item)
 		print("Item removido do inventário: ", nome_do_item)
+
+func registrar_coleta(id_do_objeto: String) -> void:
+	if not itens_coletados.has(id_do_objeto):
+		itens_coletados.append(id_do_objeto)
+
+func ja_foi_coletado(id_do_objeto: String) -> bool:
+	return itens_coletados.has(id_do_objeto)

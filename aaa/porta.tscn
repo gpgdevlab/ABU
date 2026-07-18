@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://b8ttowlnbs2mp"]
+
+[ext_resource type="Script" uid="uid://c0aoexpmgwuug" path="res://porta.gd" id="1_5rp3s"]
+
+[sub_resource type="CanvasTexture" id="CanvasTexture_umd14"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_5rp3s"]
+size = Vector2(60, 34)
+
+[node name="Porta" type="Area2D" unique_id=1296926976]
+script = ExtResource("1_5rp3s")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=75417267]
+position = Vector2(-1.1920929e-07, 4.7683716e-07)
+scale = Vector2(30, 28.000002)
+texture = SubResource("CanvasTexture_umd14")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=413472660]
+shape = SubResource("RectangleShape2D_5rp3s")

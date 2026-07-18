@@ -175,5 +175,14 @@ offset_top = 276.0
 offset_right = 617.0
 offset_bottom = 299.0
 
+[node name="TelaPreta" type="ColorRect" parent="player/CanvasLayer" unique_id=1244534567]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
 [connection signal="area_entered" from="player/InteractionZone" to="player" method="_on_interaction_zone_area_entered"]
 [connection signal="area_exited" from="player/InteractionZone" to="player" method="_on_interaction_zone_area_exited"]

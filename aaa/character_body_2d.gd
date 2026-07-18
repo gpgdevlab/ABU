@@ -10,6 +10,9 @@ var frames_mundo_2 = preload("res://nootnoot/frames_mundo2.tres")
 # --- REFERÊNCIA DA ANIMAÇÃO ---
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
+# --- REFERÊNCIA DA TELAPRETA ---
+@onready var tela_preta: ColorRect = $CanvasLayer/TelaPreta
+
 # --- SISTEMA DE MUNDOS ---
 var current_world: int = 1
 
@@ -74,33 +77,70 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # Função para tentar interagir com algo próximo
 func try_to_interact() -> void:
-	if interactable_object != null:
-		if interactable_object.has_method("interact"):
-			interactable_object.interact()
-		else:
-			print("O objeto tem área de interação, mas não tem a função 'interact()'")
-	else:
+	# 1. Verifica se o nó de interação existe antes de pedir as áreas
+	if not has_node("InteractionZone"):
+		print("Erro: O nó InteractionZone não foi encontrado no personagem!")
+		return
+		
+	var areas_perto = $InteractionZone.get_overlapping_areas()
+	var interagiu = false
+	
+	for area in areas_perto:
+		# 2. [PROTEÇÃO] Verifica se a área existe e não é nula (Nil)
+		if area == null:
+			continue
+			
+		# 3. Se a área for válida e tiver a função de interagir, executa-a
+		if area.has_method("interact"):
+			area.interact()
+			interagiu = true
+			break # Para o loop no primeiro objeto que interagir
+			
+	if not interagiu:
 		print("Nada para interagir por perto.")
 
 
 # --- FUNÇÃO DE TRANSIÇÃO DE MUNDO ---
 func toggle_world() -> void:
-	if current_world == 1:
-		current_world = 2
-		print("Viajou para o Mundo 2!")
+	# [NOVO] 1. Checa se o jogador tem o item necessário para viajar
+	if not Inventario.tem_item("Troca"):
+		print("Você não tem nenhuma carga de 'Troca' para mudar de dimensão!")
+		piscar_tela_bloqueio() # Dá o mesmo feedback visual se ele não tiver o item
+		return # Cancela a viagem aqui mesmo
 		
-		# Troca todo o conjunto de animações para as sprites do Mundo 2
+	# 2. Define qual seria o próximo mundo
+	var next_world = 2 if current_world == 1 else 1
+	
+	# 3. Ativa temporariamente o próximo mundo para a física testar
+	get_tree().call_group("world_elements", "on_world_switched", next_world)
+	
+	# 4. Espera a física processar o estado das paredes
+	await get_tree().physics_frame
+	
+	# 5. Testa se o jogador ficaria preso no lugar
+	if test_move(global_transform, Vector2.ZERO):
+		print("Bloqueado! Há um obstáculo na outra dimensão.")
+		# Se deu ruim, força todo mundo a voltar para o mundo atual
+		get_tree().call_group("world_elements", "on_world_switched", current_world)
+		piscar_tela_bloqueio()
+		return # Cancela a troca e NÃO consome o item!
+		
+	# 6. SE CHEGOU AQUI, O CAMINHO ESTÁ LIVRE E VOCÊ TEM O ITEM! Confirma a troca definitiva
+	current_world = next_world
+	if current_world == 1:
+		animated_sprite.sprite_frames = frames_mundo_1
+	else:
 		animated_sprite.sprite_frames = frames_mundo_2
 		
-	else:
-		current_world = 1
-		print("Retornou para o Mundo 1!")
-		
-		# Retorna para as animações originais do Mundo 1
-		animated_sprite.sprite_frames = frames_mundo_1
-	change_world_visuals(Color(1.0, 1.0, 1.0)) 
-	# Avisa os objetos interativos para sumirem/aparecerem
+	# [NOVO] 7. Consome o item do inventário apenas agora que a troca deu 100% certo!
+	Inventario.remover_item("Troca")
+	atualizar_ui_inventario() # Atualiza o texto da tela para sumir com o item gasto
+	
+	# 8. Força o mapa a se atualizar definitivamente para o novo mundo
 	get_tree().call_group("world_elements", "on_world_switched", current_world)
+	
+	# 9. Atualiza o visual do cowboy
+	change_world_visuals(Color(1.0, 1.0, 1.0))
 
 # Apenas um efeito visual simples de demonstração no jogador
 func change_world_visuals(new_color: Color) -> void:
@@ -125,3 +165,21 @@ func atualizar_ui_inventario() -> void:
 	else:
 		var lista_formatada = ", ".join(Inventario.itens)
 		texto_inventario.text = "Inventario: " + lista_formatada
+
+func piscar_tela_bloqueio() -> void:
+	# Garante que o nó está visível antes de começar a animação
+	tela_preta.show()
+	
+	# Zera a opacidade inicial para começar do zero absoluto
+	tela_preta.modulate.a = 0.0
+	
+	var tween = create_tween()
+	
+	# 1. Escurece a tela até 60% de opacidade preta em 0.1 segundos
+	tween.tween_property(tela_preta, "modulate:a", 0.6, 0.1)
+	
+	# 2. Volta a ficar totalmente transparente em 0.15 segundos
+	tween.tween_property(tela_preta, "modulate:a", 0.0, 0.15)
+	
+	# 3. Quando a animação terminar por completo, esconde o nó para poupar processamento
+	tween.tween_callback(func(): tela_preta.hide())

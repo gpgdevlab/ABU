@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://6umehdn8y14h"]
 
+[ext_resource type="PackedScene" uid="uid://b8ttowlnbs2mp" path="res://porta.tscn" id="1_2hh7m"]
+[ext_resource type="PackedScene" uid="uid://d0uayj3exnnu4" path="res://bau.tscn" id="1_5ckkb"]
 [ext_resource type="PackedScene" uid="uid://delx3hgnvakxf" path="res://nootnoot/CenarioMundo1.tscn" id="1_aou4a"]
 [ext_resource type="PackedScene" uid="uid://lfmflr71hpip" path="res://interactable.tscn" id="1_lgngo"]
 [ext_resource type="PackedScene" uid="uid://bicgwngtvf2rc" path="res://nootnoot/CenarioMundo2.tscn" id="2_5ckkb"]
@@ -7,6 +9,21 @@
 
 [node name="Node2D" type="Node2D" unique_id=1582925876]
 y_sort_enabled = true
+
+[node name="Porta" parent="." unique_id=1296926976 instance=ExtResource("1_2hh7m")]
+z_index = 4
+position = Vector2(181, -350)
+cena_destino = "uid://bhn5ylwyi5omy"
+active_in_world = 2
+
+[node name="Bau2" parent="." unique_id=259673093 groups=["world_elements"] instance=ExtResource("1_5ckkb")]
+z_index = 1
+position = Vector2(-92, -234)
+active_in_world = 2
+
+[node name="Bau" parent="." unique_id=327984990 groups=["world_elements"] instance=ExtResource("1_5ckkb")]
+z_index = 1
+position = Vector2(221, -97)
 
 [node name="cenario_mundo1" parent="." unique_id=1429399957 instance=ExtResource("1_aou4a")]
 
@@ -17,12 +34,14 @@ active_in_world = 2
 z_index = 1
 y_sort_enabled = true
 
-[node name="interactable2" parent="." unique_id=94622446 instance=ExtResource("1_lgngo")]
+[node name="interactable2" parent="." unique_id=94622446 groups=["world_elements"] instance=ExtResource("1_lgngo")]
+z_index = 1
 y_sort_enabled = true
 position = Vector2(53, -36)
+active_in_world = 2
 
-[node name="interactable" parent="." unique_id=1226173116 instance=ExtResource("1_lgngo")]
+[node name="interactable" parent="." unique_id=1226173116 groups=["world_elements"] instance=ExtResource("1_lgngo")]
 z_index = 1
 y_sort_enabled = true
 position = Vector2(-60, -43)
-active_in_world = 2
+active_in_world = 1
