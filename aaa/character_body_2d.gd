@@ -10,6 +10,7 @@ extends CharacterBody2D
 var is_dashing: bool = false
 var can_dash: bool = true
 var dash_direction: Vector2 = Vector2.DOWN
+var tempo_ultimo_clique: float = 0.0
 
 # --- CARREGAR OS FRAME DE CADA MUNDO ---
 var frames_mundo_1 = preload("res://nootnoot/frames_mundo1.tres")
@@ -30,6 +31,9 @@ var frames_mundo_2 = preload("res://nootnoot/frames_mundo2.tres")
 @onready var som_troca_mundo: AudioStreamPlayer2D = $SomTrocaMundo
 @onready var som_bloqueio: AudioStreamPlayer2D = $SomBloqueio
 
+# --- REFERÊNCIA DO SISTEMA ---
+@onready var menu_pausa: ColorRect = $CanvasLayer/MenuPausa
+
 # --- SISTEMA DE MUNDOS ---
 var current_world: int = 1
 
@@ -41,38 +45,45 @@ func _physics_process(_delta: float) -> void:
 	if is_dashing:
 		velocity = dash_direction * dash_speed
 		move_and_slide()
-		return # Para o resto da física normal para não misturar as velocidades
+		return
 	
 	# 1. Movimentação Topdown básica
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	
 	if direction != Vector2.ZERO:
 		velocity = direction * speed
-		dash_direction = direction.normalized() # [NOVO] Guarda a última direção para o dash saber para onde ir
+		dash_direction = direction.normalized()
 		
-		# 2. SISTEMA DE ANIMAÇÃO BASEADO NA DIREÇÃO
-		# Prioriza a direção com maior força no movimento
+		# [VERIFICAÇÃO DE SPAM] Sempre que uma tecla é pressionada, atualiza o cronômetro do jogo
+		tempo_ultimo_clique = Time.get_ticks_msec() / 1000.0
+		
+		# 2. SISTEMA DE ANIMAÇÃO PROTEGIDO CONTRA REINICIALIZAÇÃO
+		var animacao_desejada = ""
 		if abs(direction.x) > abs(direction.y):
-			# Movimento horizontal
-			if direction.x > 0:
-				animated_sprite.play("move_right")
-			else:
-				animated_sprite.play("move_left")
+			animacao_desejada = "move_right" if direction.x > 0 else "move_left"
 		else:
-			# Movimento vertical
-			if direction.y > 0:
-				animated_sprite.play("move_down")
-			else:
-				animated_sprite.play("move_up")
+			animacao_desejada = "move_down" if direction.y > 0 else "move_up"
+			
+		if animated_sprite.animation != animacao_desejada or not animated_sprite.is_playing():
+			animated_sprite.play(animacao_desejada)
 				
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, speed)
 		
-		# 3. PARADO (IDLE)
-		# Quando o jogador para, manter o frame parado olhando para a última direção,
-		# ou simplesmente parar a animação atual no primeiro quadro (frame 0)
-		animated_sprite.stop()
-		animated_sprite.frame = 0 # Mantém o sprite de pé, sem caminhar
+		# Calcula quanto tempo se passou desde o último clique de movimento
+		var tempo_desde_o_clique = (Time.get_ticks_msec() / 1000.0) - tempo_ultimo_clique
+		
+		# [TRAVA DE SPAM] Se o último clique aconteceu há menos de 0.15 segundos,
+		# o jogo considera que você está "spamando" a tecla e NÃO para a animação!
+		if tempo_desde_o_clique < 0.15:
+			# Mantém a animação rodando normalmente enquanto o spam durar
+			if not animated_sprite.is_playing():
+				animated_sprite.play()
+		else:
+			# Se você realmente soltou o botão e parou de spamar, aí sim reseta o frame
+			if velocity.length() < 10.0:
+				animated_sprite.stop()
+				animated_sprite.frame = 0
 
 	move_and_slide()
 
@@ -107,6 +118,9 @@ func _ready() -> void:
 	atualizar_musica_do_mundo()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		alternar_pausa()
+	
 	# 1. Detecta o comando de interagir
 	if event.is_action_pressed("interact"):
 		try_to_interact()
@@ -226,11 +240,23 @@ func _on_interaction_zone_area_exited(area: Area2D) -> void:
 		interactable_object = null
 		
 func atualizar_ui_inventario() -> void:
-	if Inventario.itens.size() == 0:
+	var texto_final = "Inventario: "
+	var tem_itens = false
+	
+	# Passa por todos os itens do dicionário para montar o texto da interface
+	for nome_item in Inventario.itens:
+		var quantidade = Inventario.itens[nome_item]
+		
+		# Só mostra na tela se o jogador tiver pelo menos 1 unidade do item
+		if quantidade > 0:
+			tem_itens = true
+			var limite = Inventario.limites_maximos.get(nome_item, 99)
+			texto_final += nome_item + " (" + str(quantidade) + "/" + str(limite) + ") "
+			
+	if not tem_itens:
 		texto_inventario.text = "Inventario: Vazio"
 	else:
-		var lista_formatada = ", ".join(Inventario.itens)
-		texto_inventario.text = "Inventario: " + lista_formatada
+		texto_inventario.text = texto_final
 
 func piscar_tela_bloqueio() -> void:
 	# Garante que o nó está visível antes de começar a animação
@@ -304,3 +330,23 @@ func executar_dash() -> void:
 	await get_tree().create_timer(dash_cooldown).timeout
 	can_dash = true
 	print("Dash pronto para usar novamente!")
+	
+func alternar_pausa() -> void:
+	get_tree().paused = not get_tree().paused
+	menu_pausa.visible = get_tree().paused
+	
+	# [NOVO] Se o jogo foi despausado, tira totalmente o foco do menu
+	if not get_tree().paused:
+		menu_pausa.release_focus()
+	print("Estado de pausa: ", get_tree().paused)
+
+
+func _on_botao_voltar_pressed() -> void:
+	# Se clicou em voltar, apenas despausa e esconde o menu
+	alternar_pausa()
+
+func _on_botao_sair_pressed() -> void:
+	# Despausa o motor antes de sair para não congelar o motor do editor
+	get_tree().paused = false
+	# Fecha o jogo completamente
+	get_tree().quit()

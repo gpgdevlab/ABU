@@ -22,18 +22,26 @@ func _ready() -> void:
 
 # Função que o jogador vai chamar ao apertar o botão de interagir
 func interact() -> void:
-	Inventario.adicionar_item(item_name)
+	# 1. Tenta colocar o item no dicionário global
+	var conseguiu_coletar = Inventario.adicionar_item(item_name)
 	
-	# Registra que este nó de item foi coletado antes de destruí-lo
-	Inventario.registrar_coleta(name)
-	
-	var player = get_tree().get_first_node_in_group("player")
-	if player:
-		print("Jogador encontrado no grupo! Atualizando UI...")
-		if player.has_method("atualizar_ui_inventario"):
+	# 2. Se a função retornar TRUE (tinha espaço), aí sim o item some do chão!
+	if conseguiu_coletar:
+		print("Coletou o item ", item_name, " do chão com sucesso!")
+		
+		# Atualiza a interface do player na tela
+		var player = get_tree().get_first_node_in_group("player")
+		if player and player.has_method("atualizar_ui_inventario"):
 			player.atualizar_ui_inventario()
-	
-	queue_free()
+			
+		# Remove o item do mapa definitivamente
+		queue_free()
+	else:
+		# Se retornar FALSE (inventário cheio), o item CONTINUA no chão intacto
+		print("Seu bolso está lotado! O item permanecerá no chão.")
+		# [Opcional] Som de erro do player:
+		var player = get_tree().get_first_node_in_group("player")
+		if player: player.som_bloqueio.play()
 
 # [NOVO] Função para fazer o item sumir/aparecer na troca de dimensões
 func on_world_switched(target_world: int) -> void:

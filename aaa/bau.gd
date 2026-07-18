@@ -6,7 +6,7 @@ extends Area2D # Estender direto de Area2D
 @export var precisa_de_chave: bool = false
 @export var nome_da_chave: String = "Chave do Bau"
 
-# [NOVO] A variável que o sistema do mapa usa para saber em qual mundo o baú aparece
+# A variável que o sistema do mapa usa para saber em qual mundo o baú aparece
 @export var active_in_world: int = 1 
 
 var ja_aberto: bool = false
@@ -32,12 +32,21 @@ func _ready() -> void:
 		show()
 		monitoring = true
 		monitorable = true
-		$CollisionShape2D.disabled = ja_aberto
+		$CollisionShape2D.disabled = ja_aberto # Desativa a área se já foi aberto
+		
+		# [CORREÇÃO] O StaticBody2D DEVE continuar ATIVO (false para disabled) 
+		# mesmo se o baú já foi aberto, contanto que seja o mundo correto!
+		if has_node("StaticBody2D/CollisionShape2D"):
+			$"StaticBody2D/CollisionShape2D".disabled = false
 	else:
 		hide()
 		monitoring = false
 		monitorable = false
 		$CollisionShape2D.disabled = true
+		
+		# [NOVO] Desativa a parede física completamente se for do outro mundo
+		if has_node("StaticBody2D/CollisionShape2D"):
+			$"StaticBody2D/CollisionShape2D".disabled = true
 		
 func interact() -> void:
 	# 1. Se já está aberto, não faz nada
@@ -46,39 +55,48 @@ func interact() -> void:
 		return
 		
 	# 2. Se precisa de chave, checa o inventário antes
-	if precisa_de_chave and not Inventario.tem_item(nome_da_chave):
-		print("Este baú está trancado! Você precisa de: ", nome_da_chave)
-		return
-		
-	# 3. ABRE O BAÚ!
-	ja_aberto = true
-	animated_sprite.play("aberto")
-	# [NOVO] Salva permanentemente no Singleton que ESTE baú específico foi aberto
-	Inventario.registrar_coleta(name)
-	
 	if precisa_de_chave:
-		Inventario.remover_item(nome_da_chave)
+			Inventario.remover_item(nome_da_chave)
+			print("Chave ", nome_da_chave, " utilizada e removida do inventário.")
 		
-	# 4. Entrega o prêmio para o jogador
-	Inventario.adicionar_item(item_dentro)
-	print("Você abriu o baú e encontrou: ", item_dentro)
+	var conseguiu_coletar = Inventario.adicionar_item(item_dentro)
 	
-	# 5. Avisa o jogador para atualizar o texto do inventário na tela
-	var player = get_tree().get_first_node_in_group("player")
-	if player and player.has_method("atualizar_ui_inventario"):
-		player.atualizar_ui_inventario()
+	if conseguiu_coletar:
+		# Se tinha espaço no inventário, o baú abre normalmente!
+		ja_aberto = true
+		Inventario.registrar_coleta(name)
+		animated_sprite.play("aberto")
+		
+		# Desativa APENAS a Area2D (para o jogador não conseguir apertar "E" de novo)
+		$CollisionShape2D.disabled = true
+			
+		# Código para atualizar o player
+		var player = get_tree().get_first_node_in_group("player")
+		if player and player.has_method("atualizar_ui_inventario"):
+			player.atualizar_ui_inventario()
+	else:
+		# Se retornou false, significa que o limite foi estourado!
+		print("O baú não pode ser aberto porque seu bolso está cheio deste item!")
+		var player = get_tree().get_first_node_in_group("player")
+		if player: player.som_bloqueio.play()
 
-# [NOVO] Função para fazer o baú sumir/aparecer quando trocar de mundo, igual aos seus outros itens
+# Função para fazer o baú sumir/aparecer quando trocar de mundo, igual aos seus outros itens
 func on_world_switched(target_world: int) -> void:
-	# Se o baú pertence a este mundo e ainda NÃO foi aberto
 	if target_world == active_in_world:
 		show()
-		monitoring = true
-		monitorable = true
+		monitoring = not ja_aberto
+		monitorable = not ja_aberto
 		$CollisionShape2D.set_deferred("disabled", ja_aberto) 
+		
+		# [NOVO] Se voltou para o mundo do baú, liga a parede física dele novamente
+		if has_node("StaticBody2D/CollisionShape2D"):
+			$"StaticBody2D/CollisionShape2D".set_deferred("disabled", false)
 	else:
 		hide()
-		# Desliga tudo para não criar blocos invisíveis nas outras dimensões
 		monitoring = false
 		monitorable = false
 		$CollisionShape2D.set_deferred("disabled", true)
+		
+		# [NOVO] Se mudou de mundo, desliga a parede física para o jogador passar por cima
+		if has_node("StaticBody2D/CollisionShape2D"):
+			$"StaticBody2D/CollisionShape2D".set_deferred("disabled", true)
